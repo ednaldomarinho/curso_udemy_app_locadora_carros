@@ -33,7 +33,8 @@ class MarcaController extends Controller
      */
     public function store(Request $request)
     {
-       // $marca = Marca::create($request->all()); 
+        $request->validate($this->marca->rules(), $this->marca->feedback());
+
         $marca = $this->marca->create($request->all());
         return response()->json($marca, 201);
     }
@@ -68,13 +69,29 @@ class MarcaController extends Controller
 
         if ($marca === null) {
             return response()->json(['erro' => 'Impossível realizar a atualização, recurso não existe!'], 404);
-        }else {
-            $marca->update($request->all());
-            return response()->json($marca, 200);
         }
-        
-    }
 
+       if($request->method() === 'PATCH'){
+
+            $regrasDinamicas = [];
+
+            //percorrer todas as regras do Model
+            foreach ($marca->rules() as $input => $regra) {
+
+                if (array_key_exists($input, $request->all())) {
+                    $regrasDinamicas[$input] = $regra;
+                }
+            }
+            
+            $request->validate($regrasDinamicas, $marca->feedback());
+
+       }else{
+            $request->validate($marca->rules(), $marca->feedback());
+       }
+       $marca->update($request->all());
+       return response()->json($marca, 200);        
+    }
+    
     /**
      * Remove the specified resource from storage.
      *
